@@ -183,12 +183,12 @@ Apify.main(async () => {
         handlePageFunction,
         handleFailedRequestFunction: async ({ request }) => {
             console.log(`Request ${request.url} failed 4 times`);
-	},
-	maxRequestRetries: 1,
-	maxConcurrency: input.parallels || 1,
-	pageOpsTimeoutMillis: 999999,
-	launchPuppeteerOptions: input.puppeteerOptions || {},
-	gotoFunction
+		},
+		maxRequestRetries: 1,
+		maxConcurrency: input.parallels || 1,
+		pageOpsTimeoutMillis: 999999,
+		launchPuppeteerOptions: input.puppeteerOptions || {},
+		gotoFunction
     });
 
     console.log('running the crawler')
