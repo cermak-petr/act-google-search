@@ -15,6 +15,6 @@ Input is a JSON object with the following properties:
 }
 ```
 
-__query__ is the only required attribute. This is the google search query.
-__maxPages__ defines how many search pages will be crawler, default is 1.
+__query__ is the only required attribute. This is the google search query.  
+__maxPages__ defines how many search pages will be crawler, default is 1.  
 __linkTypes__ specifies which types of links will be allowed, can by any of __["organic", "ad", "snackpack"]__. All of them are allowed by default.
