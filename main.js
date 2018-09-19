@@ -34,17 +34,18 @@ Apify.main(async () => {
     const requestQueue = await Apify.openRequestQueue();
     if(!input.query){throw new Error('Missinq "query" attribute in INPUT!');}
     
+    const gUrl = 'https://www.google.com';
     const baseUrl = 'https://www.google.com/search?q=';
     const startUrl = baseUrl + encodeURIComponent(input.query);
     
-	await requestQueue.addRequest(new Apify.Request({ 
+    await requestQueue.addRequest(new Apify.Request({ 
     	url: startUrl,
-    	uniqueKey: startUrl,
-    	userData: {label: 'START', depth: 1, referrer: null}
+    	uniqueKey: 'page_1',
+    	userData: {label: 'start', page: 1}
     }));
 	
-	const gotoFunction = async ({ page, request }) => {
-    	await page.setRequestInterception(true)
+    const gotoFunction = async ({ page, request }) => {
+    	await page.setRequestInterception(true);
     	page.on('request', intercepted => {
     	    const type = intercepted.resourceType();
     		if(type === 'image' || type === 'stylesheet'){intercepted.abort();}
@@ -55,7 +56,7 @@ Apify.main(async () => {
     	return await page.goto(request.url, {timeout: 200000});
     };
     
-    function pageFunction(context) {return new Promise((resolve, reject) => {
+    function pageFunction(input, userData) {return new Promise((resolve, reject) => {
 
         var startedAt = Date.now();
         var result = [];
@@ -73,62 +74,71 @@ Apify.main(async () => {
                 return;
             }
             
-            $(".g .rc").each(function() {
-                result.push({
-                    name: $(this).find("h3").text(),
-                    link: $(this).find(".r a").attr("href"),
-                    displayed_link: $(this).find("cite").text(),
-                    text: $(this).find(".s .st").text(),
-                    type: "organic"
+            if(!input.linkTypes || input.linkTypes.indexOf('organic') > -1){
+                $(".g .rc").each(function() {
+                    result.push({
+                        name: $(this).find("h3").text(),
+                        link: $(this).find(".r a").attr("href"),
+                        displayed_link: $(this).find("cite").text(),
+                        text: $(this).find(".s .st").text(),
+                        type: "organic",
+                        page: userData.page
+                    });
                 });
-            });
+            }
             
-            $('.ads-ad').each(function() {
-                result.push({
-                    name: $(this).find("h3").text(),
-                    link: $(this).find("h3 a").attr("href").match(/(.*)&adurl=(.*)/)[2],
-                    displayed_link: $(this).find("cite").text(),
-                    text: $(this).find(".ellip").text(),
-                    type: "ad"
+            if(!input.linkTypes || input.linkTypes.indexOf('ad') > -1){
+                $('.ads-ad').each(function() {
+                    result.push({
+                        name: $(this).find("h3").text(),
+                        link: $(this).find("h3 a").attr("href").match(/(.*)&adurl=(.*)/)[2],
+                        displayed_link: $(this).find("cite").text(),
+                        text: $(this).find(".ellip").text(),
+                        type: "ad",
+                        page: userData.page
+                    });
                 });
-            });
+            }
             
-            $('._gt').each(function() {
-                var item ={
-                    name: $(this).find("._rl").text(),
-                    link: $(this).find("h3 a").attr("href"),
-                    type: "snackpack",
-                    star_rating: $(this).find("._PXi").text(),
-                    website: $(this).find('.rllt__action-button:eq(0)').attr("href"),
-                    address: $(this).find('.rllt__details div:eq(2) span').text(),
-                    hours: $(this).find('.rllt__details .rllt__wrapped').text()
-                };
-                var review_count = $(this).find('g-review-stars').parent().contents().filter(function(){
-                    return this.nodeType == 3;
-                }).text();
-                if (review_count !== "") {
-                    var match = review_count.match(/\s\((\d+)\)\s·/);
-                    if (match && match.length === 2) {
-                        item.review_count = match[1];
+            if(!input.linkTypes || input.linkTypes.indexOf('snackpack') > -1){
+                $('._gt').each(function() {
+                    var item ={
+                        name: $(this).find("._rl").text(),
+                        link: $(this).find("h3 a").attr("href"),
+                        type: "snackpack",
+                        star_rating: $(this).find("._PXi").text(),
+                        website: $(this).find('.rllt__action-button:eq(0)').attr("href"),
+                        address: $(this).find('.rllt__details div:eq(2) span').text(),
+                        hours: $(this).find('.rllt__details .rllt__wrapped').text(),
+                        page: userData.page
+                    };
+                    var review_count = $(this).find('g-review-stars').parent().contents().filter(function(){
+                        return this.nodeType == 3;
+                    }).text();
+                    if (review_count !== "") {
+                        var match = review_count.match(/\s\((\d+)\)\s·/);
+                        if (match && match.length === 2) {
+                            item.review_count = match[1];
+                        }
                     }
-                }
-                var contact = $(this).find('.rllt__details div:eq(2)').text();
-                if (contact !== "") {
-                    var match1 = contact.match(/·\s(.*)/);
-                    if (match1 && match1.length === 2) {
-                        item.phone_number = match1[1];
+                    var contact = $(this).find('.rllt__details div:eq(2)').text();
+                    if (contact !== "") {
+                        var match1 = contact.match(/·\s(.*)/);
+                        if (match1 && match1.length === 2) {
+                            item.phone_number = match1[1];
+                        }
                     }
-                }
-                var business_category = $(this).find('.rllt__details div:eq(0)').text();
-                if (business_category !== "") {
-                    var match2 = business_category.match(/·\s(.*)/);
-                    if (match2 && match2.length === 2) {
-                        item.business_category = match2[1];
+                    var business_category = $(this).find('.rllt__details div:eq(0)').text();
+                    if (business_category !== "") {
+                        var match2 = business_category.match(/·\s(.*)/);
+                        if (match2 && match2.length === 2) {
+                            item.business_category = match2[1];
+                        }
                     }
-                }
-                
-                result.push(item);
-            });
+                    
+                    result.push(item);
+                });
+            }
     
             resolve(result);
         };
@@ -149,7 +159,22 @@ Apify.main(async () => {
         
         await Apify.utils.puppeteer.injectJQuery(page);
         
-        const result = await page.evaluate(pageFunction, request.userData);
+        if(input.maxPages && input.maxPages > 1){
+            const links = await page.$$('td a.fl');
+            for(const link of links){
+                const href = await getAttribute(link, 'href');
+                const pgNum = parseInt(await getAttribute(link, 'text'));
+                if(href && pgNum <= input.maxPages){
+                    await requestQueue.addRequest(new Apify.Request({ 
+                    	url: href,
+                    	uniqueKey: 'page_' + pgNum,
+                    	userData: {label: 'page', page: pgNum}
+                    }));
+                }
+            }
+        }
+        
+        const result = await page.evaluate(pageFunction, input, request.userData);
         if(result){await Apify.pushData(result);}
     };
 
@@ -158,20 +183,14 @@ Apify.main(async () => {
         handlePageFunction,
         handleFailedRequestFunction: async ({ request }) => {
             console.log(`Request ${request.url} failed 4 times`);
-		},
-		maxRequestRetries: 1,
-		maxConcurrency: input.parallels || 1,
-		pageOpsTimeoutMillis: 999999,
-		launchPuppeteerOptions: {
-		    //liveView: true,
-            useApifyProxy: true,
-            //apifyProxyGroups: ['BUYPROXIES94952'],
-            apifyProxySession: 'my_session_1',
-        },
-		//gotoFunction,
-		//launchPuppeteerOptions:{useChrome:true}
+	},
+	maxRequestRetries: 1,
+	maxConcurrency: input.parallels || 1,
+	pageOpsTimeoutMillis: 999999,
+	launchPuppeteerOptions: input.puppeteerOptions || {},
+	gotoFunction
     });
 
-	console.log('running the crawler')
+    console.log('running the crawler')
     await crawler.run();
 });
