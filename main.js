@@ -42,7 +42,7 @@ Apify.main(async () => {
     const startUrls = (input.startUrls || input.queries.map(q => baseUrl + encodeURIComponent(q))).map(url => {
     	return {
 	    url: url,
-            userData: {label: 'start', page: 1}
+	    userData: {label: 'start', page: 1}
 	}
     });
 	
