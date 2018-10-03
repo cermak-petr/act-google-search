@@ -32,17 +32,24 @@ Apify.main(async () => {
     
     console.log('opening request queue');
     const requestQueue = await Apify.openRequestQueue();
-    if(!input.query){throw new Error('Missinq "query" attribute in INPUT!');}
-    
+	
+    if(!input.queries && !input.startUrls){
+	throw new Error('Missinq "queries" or "startUrls" attribute in INPUT!');
+    }
+
     const gUrl = 'https://www.google.com';
     const baseUrl = 'https://www.google.com/search?q=';
-    const startUrl = baseUrl + encodeURIComponent(input.query);
-    
-    await requestQueue.addRequest(new Apify.Request({ 
-    	url: startUrl,
-    	uniqueKey: 'page_1',
-    	userData: {label: 'start', page: 1}
-    }));
+    const startUrls = (input.startUrls || input.queries.map(q => baseUrl + encodeURIComponent(q))).map(url => {
+    	return {
+	    url: url,
+            userData: {label: 'start', page: 1}
+	}
+    });
+	
+    const requestList = new Apify.RequestList({
+	sources: startUrls,
+	persistStateKey: 'startUrls'
+    });
 	
     const gotoFunction = async ({ page, request }) => {
     	await page.setRequestInterception(true);
@@ -179,16 +186,17 @@ Apify.main(async () => {
     };
 
     const crawler = new Apify.PuppeteerCrawler({
+	requestList,
         requestQueue,
         handlePageFunction,
         handleFailedRequestFunction: async ({ request }) => {
             console.log(`Request ${request.url} failed 4 times`);
-		},
-		maxRequestRetries: 1,
-		maxConcurrency: input.parallels || 1,
-		pageOpsTimeoutMillis: 999999,
-		launchPuppeteerOptions: input.puppeteerOptions || {},
-		gotoFunction
+	},
+	maxRequestRetries: 1,
+	maxConcurrency: input.parallels || 1,
+	pageOpsTimeoutMillis: 999999,
+	launchPuppeteerOptions: input.puppeteerOptions || {},
+	gotoFunction
     });
 
     console.log('running the crawler')
