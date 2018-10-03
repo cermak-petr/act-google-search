@@ -187,9 +187,9 @@ Apify.main(async () => {
 
     const crawler = new Apify.PuppeteerCrawler({
 	requestList,
-        requestQueue,
-        handlePageFunction,
-        handleFailedRequestFunction: async ({ request }) => {
+	requestQueue,
+	handlePageFunction,
+	handleFailedRequestFunction: async ({ request }) => {
             console.log(`Request ${request.url} failed 4 times`);
 	},
 	maxRequestRetries: 1,
