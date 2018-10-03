@@ -40,7 +40,7 @@ Apify.main(async () => {
     const gUrl = 'https://www.google.com';
     const baseUrl = 'https://www.google.com/search?q=';
     const startUrls = (input.startUrls || input.queries.map(q => baseUrl + encodeURIComponent(q))).map(url => {
-    	return {
+    	return url.url ? url : {
 	    url: url,
 	    userData: {label: 'start', page: 1}
 	}
