@@ -3,20 +3,27 @@ Apify actor for extracting google search data.
 
 This actor opens a google search page for the specified query and extracts all the results.
 
-**INPUT**
+## INPUT
 
 Input is a JSON object with the following properties:
 
-```javascript
+
+```json
 {
-    "query": SEARCH_QUERY, 
-    "maxPages": MAX_PAGE_COUNT,
-    "linkTypes": ALLOWED_LINK_TYPES,
-    "puppeteerOptions": LAUNCH_PUPPETEER_OPTIONS
+    "queries": ["your query"],
+    "maxPages": 1,
+    "linkTypes": ["organic", "ad", "snackpack"],
+    "puppeteerOptions": {
+        // ...
+    }
 }
 ```
 
-__query__ is the only required attribute. This is the google search query.  
-__maxPages__ defines how many search pages will be crawler, default is 1.  
-__linkTypes__ specifies which types of links will be allowed, it is an array containing any of __["organic", "ad", "snackpack"]__. All of them are allowed by default.  
-__puppeteerOptions__ is a PuppeteerCrawler parameter [launchPuppeteerOptions](https://www.apify.com/docs/sdk/apify-runtime-js/latest#LaunchPuppeteerOptions).
+See: `apify_storage/key_value_stores/default/INPUT.json`
+
+* `queries`: is the only required attribute. This is the google search query.
+* `maxPages`: defines how many search pages will be crawler, default is 1.
+* `linkTypes`: specifies which types of links will be allowed, it is an array containing any of __["organic", "ad", "snackpack"]__. All of them are allowed by default.
+* `puppeteerOptions`: is a PuppeteerCrawler parameter [launchPuppeteerOptions](https://www.apify.com/docs/sdk/apify-runtime-js/latest#LaunchPuppeteerOptions).
+
+Also, instead of `queries` you may provide a `startUrls` with direct URLs to Google Search results.
